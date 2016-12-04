@@ -43,8 +43,9 @@ for term in list_proc:
     for c in term:
         # for each character in the term
         c = str(c)
-        pdb.set_trace()
+        # pdb.set_trace()
         if c == " ":
+            pdb.set_trace()
             last_syl = True
         cur_syl += c 
         # pdb.set_trace()
@@ -60,18 +61,20 @@ for term in list_proc:
                 rhyme_fam += c
                 prev_c = c
                 first_syl = False
-            elif prev_c not in SpecialCharacters.vowels:
-                rhyme_fam += cur_syl
-                prev_c = c
             elif last_syl:
+                pdb.set_trace()
                 last = syllables.pop()
                 now = (last[0] + cur_syl.strip(), last[1])
                 syllables.append(now)
+            elif prev_c not in SpecialCharacters.vowels:
+                rhyme_fam += c 
+                prev_c = c
             else:
                 syllables.append((cur_syl.rstrip(c), cur_stressed))
                 cur_stressed = False
                 rhyme_fam += c
                 cur_syl = c
+                prev_c = c
         # if the character is a vowel, we run into several possible situations
         else:
             # if we start a new word or the previous character is not a vowel,
@@ -92,7 +95,6 @@ for term in list_proc:
         syl_count=  len(syllables)
     
     pdb.set_trace()
-    syllables.append((cur_syl, cur_stressed))
     cur_stressed = False
     print("syllable count " + str(syl_count)),
     print("rhyme: " + rhyme_fam)
