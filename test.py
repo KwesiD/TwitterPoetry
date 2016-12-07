@@ -34,7 +34,7 @@ for term in list_proc:
     # we need the previous character to realize if we have reached a new
     # syllable or not.
     prev_c = ''
-    syllables = []
+    syllables = [""]
     cur_stressed = False
     first_syl = True
     last_syl = False
@@ -43,12 +43,11 @@ for term in list_proc:
     for c in term:
         # for each character in the term
         c = str(c)
-        # pdb.set_trace()
+
         if c == " ":
-            pdb.set_trace()
             last_syl = True
         cur_syl += c 
-        # pdb.set_trace()
+
         # if the character is not a vowel, we should include it in the rhyme family
         if c in skip:
             continue
@@ -57,12 +56,10 @@ for term in list_proc:
             prev_c = "\'"
             continue
         if c not in SpecialCharacters.vowels:
-            if first_syl:
-                rhyme_fam += c
-                prev_c = c
-                first_syl = False
+            if last_syl and first_syl:
+                syllables[0] = term.split()
+                break
             elif last_syl:
-                pdb.set_trace()
                 last = syllables.pop()
                 now = (last[0] + cur_syl.strip(), last[1])
                 syllables.append(now)
@@ -92,9 +89,8 @@ for term in list_proc:
             else: 
                 rhyme_fam += c
                 prev_c = c
-        syl_count=  len(syllables)
+    syl_count=  len(syllables)
     
-    pdb.set_trace()
     cur_stressed = False
     print("syllable count " + str(syl_count)),
     print("rhyme: " + rhyme_fam)
