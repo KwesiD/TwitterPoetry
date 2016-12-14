@@ -4,10 +4,12 @@ import subprocess
 import unicodedata
 import SpecialCharacters
 import pdb
+import pprint
 
 
 #Takes a query as an input and searches for tweets related to that query
 def getTweets(query):
+    pp = pprint.PrettyPrinter(indent=4)
     try:
         tso = TwitterSearchOrder() # create a TwitterSearchOrder object
         print(query)
@@ -37,11 +39,8 @@ def getTweets(query):
             words = tweet['text']
             print(words)
             words_info = test.get_words_info(words)
-            pdb.set_trace()
-            for word in words_info:
-                print("Rhyme Fam: " + str(word[1]))
-                print("Syllable count: " + str(word[0]))
-                print("Syllables: " + str(word[2]))
+            # pdb.set_trace()
+            pp.pprint(words_info)
                 # pronunciation = get_pronunciation("\""+ str(text) +"\"")
             # for term in pronunciation.split(): #takes individual word pronunciations
             #     syllable_count, syllable_list = tokenize(term)
