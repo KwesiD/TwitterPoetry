@@ -122,7 +122,7 @@ def get_words_info(words):
 
     return results
 
-query = input("Gimme some shit: ")
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(get_words_info(query))
+# query = input("Gimme some shit: ")
+# pp = pprint.PrettyPrinter(indent=4)
+# pp.pprint(get_words_info(query))
 
