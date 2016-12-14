@@ -89,7 +89,10 @@ def get_words_info(words):
                     rhyme_fam += c 
                     prev_c = c
                 else:
-                    syllables.append((cur_syl.rstrip(c), cur_stressed))
+                    if (c == " "):
+                        syllables.append((cur_syl.rstrip(c), cur_stressed))
+                    else:
+                        syllables.append((cur_syl, cur_stressed))
                     cur_stressed = False
                     rhyme_fam += c
                     cur_syl = c

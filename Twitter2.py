@@ -1,4 +1,5 @@
 from TwitterSearch import *  #code from https://github.com/ckoepp/TwitterSearch
+import test
 import subprocess
 import unicodedata
 import SpecialCharacters
@@ -33,25 +34,31 @@ def getTweets(query):
             #keep this line below as a reference. from the original code:
             #print( '@%s tweeted: %s' % ( tweet['user']['screen_name'], tweet['text'] ) )
 
-            text = to_ascii(tweet['text'])
-            print(text)
-            pronunciation = get_pronunciation("\""+ str(text) +"\"")
-            for term in pronunciation.split(): #takes individual word pronunciations
-                syllable_count, syllable_list = tokenize(term)
-                print(term)
-                syl_count = 0
-                rhyme_fam = ''
-                for c in term:
-                    if c not in SpecialCharacters.vowels:
-                        rhyme_fam += str(c)
-                    else:
-                        syl_count += 1
-                        rhyme_fam = str(c)
-                        while next(term) in SpecialCharacters.vowels and t.next is not None:
-                            c = next(term)
-                            rhyme_fam += c
-                print("syllable count " + str(syl_count)),
-                print("rhyme: " + rhyme_fam)
+            words = tweet['text']
+            print(words)
+            words_info = test.get_words_info(words)
+            pdb.set_trace()
+            for word in words_info:
+                print("Rhyme Fam: " + str(word[1]))
+                print("Syllable count: " + str(word[0]))
+                print("Syllables: " + str(word[2]))
+                # pronunciation = get_pronunciation("\""+ str(text) +"\"")
+            # for term in pronunciation.split(): #takes individual word pronunciations
+            #     syllable_count, syllable_list = tokenize(term)
+            #     print(term)
+            #     syl_count = 0
+            #     rhyme_fam = ''
+            #     for c in term:
+            #         if c not in SpecialCharacters.vowels:
+            #             rhyme_fam += str(c)
+            #         else:
+            #             syl_count += 1
+            #             rhyme_fam = str(c)
+            #             while next(term) in SpecialCharacters.vowels and t.next is not None:
+            #                 c = next(term)
+            #                 rhyme_fam += c
+            #     print("syllable count " + str(syl_count)),
+            #     print("rhyme: " + rhyme_fam)
             i+=1
             
     except TwitterSearchException as e: # take care of all those ugly errors if there are some
