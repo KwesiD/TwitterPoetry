@@ -3,6 +3,8 @@ import unicodedata
 import SpecialCharacters
 import pdb
 from collections import deque
+import pprint
+
 
 
 def get_pronunciation(sentence):
@@ -14,83 +16,110 @@ def get_pronunciation(sentence):
     output = subprocess.check_output(['espeak', '-x', '-q', sentence])
     return output.decode("utf-8")
 
-query = input("Enter word: ")
+def get_words_info(words):
 
-skip = ["%", "=", "_", ":", "|"]
+    query = words
 
-pronounciaiton = get_pronunciation(query)
-query = query.split()
-list_proc = pronounciaiton.split()
-i = 0
-for term in list_proc:
-    print(str(query[i]))
-    i += 1
-    # for each term provided
-    print(term)
-    syl_count = 0
-    # we contruct the rhyme family by figuing out the current syllable,
-    # the last syllable in the word is the rhyme family
-    rhyme_fam = ''
-    # we need the previous character to realize if we have reached a new
-    # syllable or not.
-    prev_c = ''
-    syllables = [""]
-    cur_stressed = False
-    first_syl = True
-    last_syl = False
-    cur_syl = ''
-    term += " "
-    for c in term:
-        # for each character in the term
-        c = str(c)
+    skip = ["%", "=", "_", ":", "|"]
 
-        if c == " ":
-            last_syl = True
-        cur_syl += c 
+    results = []
 
-        # if the character is not a vowel, we should include it in the rhyme family
-        if c in skip:
-            continue
-        if c in ["\'", ","]:
-            cur_stressed = True
-            prev_c = "\'"
-            continue
-        if c not in SpecialCharacters.vowels:
-            if last_syl and first_syl:
-                syllables[0] = term.split()
-                break
-            elif last_syl:
-                last = syllables.pop()
-                now = (last[0] + cur_syl.strip(), last[1])
-                syllables.append(now)
-            elif prev_c not in SpecialCharacters.vowels:
-                rhyme_fam += c 
-                prev_c = c
+    pronounciaiton = get_pronunciation(query)
+    query = query.split()
+    list_proc = pronounciaiton.split()
+    i = 0
+    for term in list_proc:
+        # print(str(query[i]))
+        i += 1
+        # for each term provided
+        print(term)
+        syl_count = 0
+        # we contruct the rhyme family by figuing out the current syllable,
+        # the last syllable in the word is the rhyme family
+        rhyme_fam = ''
+        # we need the previous character to realize if we have reached a new
+        # syllable or not.
+        prev_c = ''
+        syllables = []
+        cur_stressed = False
+        first_syl = True
+        last_syl = False
+        cur_syl = ''
+        term += " "
+        for c in term:
+            # for each character in the term
+            c = str(c)
+
+            if c == " ":
+                last_syl = True
+            cur_syl += c 
+
+            # if the character is not a vowel, we should include it in the rhyme family
+            if c in skip:
+                continue
+            if c in ["\'", ","]:
+                cur_stressed = True
+                prev_c = "\'"
+                continue
+            if c in SpecialCharacters.vowels and first_syl and last_syl:
+                if prev_c not in SpecialCharacters.vowels:
+                    syl = syllables.pop()
+                    last = syl[0]
+                    syllables.append((last, cur_stressed))
+                    break
+                else:
+                    syllables.append((cur_syl.strip(), cur_stressed))
+            if c not in SpecialCharacters.vowels:
+                if last_syl and first_syl:
+                    if syllables:
+                        syl = syllables.pop()
+                        last = syl[0]
+                        last_stressed = syl[1]
+                        syllables.append((last + prev_c, last_stressed))
+                    else:
+                        last = cur_syl
+                        syllables.append((last, cur_stressed))
+                    break
+                elif last_syl:
+                    # last = syllables.pop()
+                    # now = (last[0] + cur_syl.strip(), last[1])
+                    pdb.set_trace()
+                    syllables.append(cur_syl.strip())
+                elif prev_c not in SpecialCharacters.vowels:
+                    rhyme_fam += c 
+                    prev_c = c
+                else:
+                    syllables.append((cur_syl.rstrip(c), cur_stressed))
+                    cur_stressed = False
+                    rhyme_fam += c
+                    cur_syl = c
+                    prev_c = c
+            # if the character is a vowel, we run into several possible situations
             else:
-                syllables.append((cur_syl.rstrip(c), cur_stressed))
-                cur_stressed = False
-                rhyme_fam += c
-                cur_syl = c
-                prev_c = c
-        # if the character is a vowel, we run into several possible situations
-        else:
-            # if we start a new word or the previous character is not a vowel,
-            # we have started a new syllable and its time to reset
-            if prev_c == '':
-                prev_c = c
-                first_syl = False
-                continue
-            elif prev_c not in SpecialCharacters.vowels:
-                rhyme_fam = c
-                prev_c = c
-            # otherwise the character is a part of the current rhyme family 
-            elif c == " ":
-                continue
-            else: 
-                rhyme_fam += c
-                prev_c = c
-    syl_count=  len(syllables)
-    
-    cur_stressed = False
-    print("syllable count " + str(syl_count)),
-    print("rhyme: " + rhyme_fam)
+                # if we start a new word or the previous character is not a vowel,
+                # we have started a new syllable and its time to reset
+                if prev_c == '':
+                    prev_c = c
+                    first_syl = True
+                    rhyme_fam += c
+                    continue
+                elif prev_c not in SpecialCharacters.vowels:
+                    rhyme_fam = c
+                    prev_c = c
+                # otherwise the character is a part of the current rhyme family 
+                elif c == " ":
+                    continue
+                else: 
+                    rhyme_fam += c
+                    prev_c = c
+        # pdb.set_trace()
+        syl_count=  len(syllables)
+        cur_stressed = False
+        results.append((syl_count, rhyme_fam, syllables))
+
+    return results
+
+query = input("Gimme some shit: ")
+pp = pprint.PrettyPrinter(indent=4)
+pp.pprint(get_words_info(query))
+
