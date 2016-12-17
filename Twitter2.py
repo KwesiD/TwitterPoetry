@@ -5,6 +5,7 @@ import unicodedata
 import SpecialCharacters
 import pdb
 import pprint
+import CMUTweetTagger as CMU
 
 
 #Takes a query as an input and searches for tweets related to that query
@@ -40,7 +41,9 @@ def getTweets(query):
             print(words)
             words_info = test.get_words_info(words)
             # pdb.set_trace()
+            tags = CMU.runtagger_parse([words])
             pp.pprint(words_info)
+            pp.pprint(tags)
                 # pronunciation = get_pronunciation("\""+ str(text) +"\"")
             # for term in pronunciation.split(): #takes individual word pronunciations
             #     syllable_count, syllable_list = tokenize(term)
