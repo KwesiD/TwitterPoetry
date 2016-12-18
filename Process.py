@@ -2,6 +2,7 @@ from collections import Counter
 import CMUTweetTagger as CMU
 import test
 import sys
+from nltk.tokenize import sent_tokenize
 
 #takes in a list of sets. Each set contains a list of the words, their tags, and the probabilities
 def get_tag_frequencies(tagged_words):
@@ -67,39 +68,45 @@ def create_rules(tags):
 	#rule_counts = {}
 	for tagset in tags:
 		prev = ""
-		tag = ""
-		for group in tagset:
-			for word,tag,prob in group:
-				if prev == "":
-					prev = tag
-				else:
-					if prev in rules:
-						if tag in rules[prev]:
-							rules[prev][tag] += 1
-						else:
-							rules[prev][tag] = 1
-					else:
-						rules[prev] = Counter([tag])
+		#tag = ""
+		###for group in tagset:
+		
+		for word,tag,prob in tagset:
+			if prev == "":
 				prev = tag
+			else:
+				if prev in rules:
+					if tag in rules[prev]:
+						rules[prev][tag] += 1
+					else:
+						rules[prev][tag] = 1
+				else:
+					rules[prev] = Counter([tag])
+			prev = tag
 		if prev not in rules:
 			rules[prev] = Counter([])
 		if "end" in rules[prev]:
 			rules[prev]["end"] += 1
 		else:
 			rules[prev]["end"] = 1
+	for tag in rules:
+		total = sum(rules[tag].values())
+		for value in rules[tag]:
+			rules[tag][value] /= total
 	print(rules)
 	return rules
 
 
 file = open(sys.argv[1], 'r')
-sent = []
 count = 0
-for line in file:
-	sent.append(CMU.runtagger_parse(line))
-	count += 1
-	if count >= 3:
-		break
-create_rules(sent)
+x = CMU.runtagger_parse(sent_tokenize(file.read())) ##we should strip the sentences of punctuation after the file has been split into sentences
+create_rules(x)
+# for line in file:
+# 	sent.append(CMU.runtagger_parse(line))
+# 	count += 1
+# 	if count >= 3:
+# 		break
+# create_rules(sent)
 
 	# 	prev = ""
 	# 	for tag in line.strip().split():
