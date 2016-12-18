@@ -88,7 +88,7 @@ def get_words_info(words):
                         last_stressed = syl[1]
                         syllables.append((last, last_stressed))
                     else:
-                        last = cur_syl
+                        last = cur_syl.strip("*")
                         syllables.append((last, cur_stressed))
                     break
                 elif last_syl:
@@ -134,9 +134,9 @@ def get_words_info(words):
 
     return results
 
-query = input("Gimme some shit: ")
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(get_words_info(query))
-print()
+# query = input("Gimme some shit: ")
+# pp = pprint.PrettyPrinter(indent=4)
+# pp.pprint(get_words_info(query))
+# print()
 
 
