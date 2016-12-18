@@ -31,7 +31,11 @@ def rhyme_to_POS(sentances):
 			info = test.get_words_info(cur_word)[0]
 			rhyme = info[1]
 			syl_count = info[0]
-			result[rhyme][tag][syl_count] = cur_word
+			# if result[rhyme][tag][syl_count] != None:
+			cur = result[rhyme][tag].setdefault(syl_count, Counter())
+			cur[cur_word] += 1
+			# else:
+			# 	result[rhyme][tag][syl_count] = [cur_word]
 	return result
 
 
