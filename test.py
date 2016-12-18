@@ -13,7 +13,7 @@ def get_pronunciation(sentence):
     pronounciaiton as espeak would return it by running espeak as a
     subprocess.
     """
-    output = subprocess.check_output(['espeak', '-x', '-q', sentence])
+    output = subprocess.check_output(['espeak', '-x', '-q', sentence.strip('-')])
     return output.decode("utf-8")
 
 def get_words_info(words):
@@ -34,7 +34,7 @@ def get_words_info(words):
         term = term[1]
         i += 1
         # for each term provided
-        print(term)
+        # print(term)
         syl_count = 0
         # we contruct the rhyme family by figuing out the current syllable,
         # the last syllable in the word is the rhyme family
@@ -94,7 +94,7 @@ def get_words_info(words):
                 elif last_syl:
                     # last = syllables.pop()
                     # now = (last[0] + cur_syl.strip(), last[1])
-                    pdb.set_trace()
+                    # pdb.set_trace()
                     syllables.append((cur_syl.strip(), cur_stressed))
                 elif prev_c not in SpecialCharacters.vowels:
                     rhyme_fam += c 
