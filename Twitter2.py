@@ -6,6 +6,7 @@ import SpecialCharacters
 import pdb
 import pprint
 import CMUTweetTagger as CMU
+import re
 
 
 #Takes a query as an input and searches for tweets related to that query
@@ -38,6 +39,10 @@ def getTweets(query):
             #print( '@%s tweeted: %s' % ( tweet['user']['screen_name'], tweet['text'] ) )
 
             words = tweet['text']
+            start = re.search("(((RT )?@(\w)*) ?:? )?", words)
+            pdb.set_trace() 
+            words = words.lstrip(start.group(0))
+            #don't need a regular expression for URLs, we can delete those with runtagger_parse
             print(words)
             words_info = test.get_words_info(words)
             # pdb.set_trace()
