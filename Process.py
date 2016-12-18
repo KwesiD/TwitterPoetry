@@ -3,25 +3,27 @@ import CMUTweetTagger as CMU
 import test
 import sys
 from nltk.tokenize import sent_tokenize
+from numpy.random import choice
 
 #takes in a list of sets. Each set contains a list of the words, their tags, and the probabilities
 def get_tag_frequencies(tagged_words):
 	tag_table = {}
-	for sentence in tagged_words:
-		for group in sentence: 
-			for word,tag,prob in group:
-				if prob <= .65:
-					continue
-				if tag not in tag_table:
-					tag_table[tag] = Counter([word])
-				else:
-					tag_table[tag][word] += 1
-		for tag in tag_table:
-			tagset = tag_table[tag]
-			total = sum(tagset.values())
-			for word in tagset:
-				tagset[word] /= total
-	return tag_table
+	# for results in tagged_words:
+	# 	for sentence in results :
+	for group in tagged_words: 
+		for word,tag,prob in group:
+			if prob <= .65:
+				continue
+			if tag not in tag_table:
+				tag_table[tag] = Counter([word])
+			else:
+				tag_table[tag][word] += 1
+	for tag in tag_table:
+		tagset = tag_table[tag]
+		total = sum(tagset.values())
+		for word in tagset:
+			tagset[word] /= total
+		return tag_table
 
 
 
@@ -67,19 +69,20 @@ def create_rules(tags):
 	rules = {}
 	#rule_counts = {}
 	for tagset in tags:
-		prev = ""
+		prev = "Start"
 		#tag = ""
 		###for group in tagset:
 		
 		for word,tag,prob in tagset:
-			if prev == "":
+			if prev == "Start":
+				rules[prev] = Counter([tag])
 				prev = tag
 			else:
 				if prev in rules:
 					if tag in rules[prev]:
 						rules[prev][tag] += 1
 					else:
-						rules[prev][tag] = 1
+						rules[prev][tag] = 1 ##sdfghjk
 				else:
 					rules[prev] = Counter([tag])
 			prev = tag
@@ -97,10 +100,30 @@ def create_rules(tags):
 	return rules
 
 
+def generate(rules,tag_table):
+	tag = "Start"
+	sentence = ""
+	syllable_count = 0
+	while tag != "end":
+		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
+		if next_tag == "end":
+			break
+		tag = next_tag
+		#generate word from tag
+		word = choice(list(tag_table[next_tag].keys()),1,list(tag_table[next_tag].values()))[0]
+		##check syllable count
+		sentence += word + " "
+
+	print(sentence)
+
+		
+
 file = open(sys.argv[1], 'r')
 count = 0
 x = CMU.runtagger_parse(sent_tokenize(file.read())) ##we should strip the sentences of punctuation after the file has been split into sentences
-create_rules(x)
+rules = create_rules(x)
+tag_table = get_tag_frequencies(x)
+generate(rules,tag_table)
 # for line in file:
 # 	sent.append(CMU.runtagger_parse(line))
 # 	count += 1
