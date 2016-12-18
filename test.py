@@ -24,12 +24,14 @@ def get_words_info(words):
 
     results = []
 
-    pronounciaiton = get_pronunciation(query)
     query = query.split()
-    list_proc = pronounciaiton.split()
-    i = 0
+    pronounciaiton = [(k, get_pronunciation(k)) for k in query]
+    list_proc = pronounciaiton
+    i = -1
     for term in list_proc:
         # print(str(query[i]))
+        cur_word = term[0]
+        term = term[1]
         i += 1
         # for each term provided
         print(term)
@@ -45,12 +47,21 @@ def get_words_info(words):
         first_syl = True
         last_syl = False
         cur_syl = ''
-        term += " "
+        term = term.strip()
+        term += "*"
         for c in term:
             # for each character in the term
             c = str(c)
 
-            if c == " ":
+            if c == "*":
+                contains = False
+                if not first_syl:
+                    for v in SpecialCharacters.vowels:
+                        if v in cur_syl:
+                            contains = True
+                            break
+                if not contains:
+                    first_syl = True
                 last_syl = True
             cur_syl += c 
 
@@ -75,7 +86,7 @@ def get_words_info(words):
                         syl = syllables.pop()
                         last = syl[0]
                         last_stressed = syl[1]
-                        syllables.append((last + prev_c, last_stressed))
+                        syllables.append((last, last_stressed))
                     else:
                         last = cur_syl
                         syllables.append((last, cur_stressed))
@@ -84,16 +95,17 @@ def get_words_info(words):
                     # last = syllables.pop()
                     # now = (last[0] + cur_syl.strip(), last[1])
                     pdb.set_trace()
-                    syllables.append(cur_syl.strip())
+                    syllables.append((cur_syl.strip(), cur_stressed))
                 elif prev_c not in SpecialCharacters.vowels:
                     rhyme_fam += c 
                     prev_c = c
                 else:
-                    if (c == " "):
+                    if (c == "*"):
                         syllables.append((cur_syl.rstrip(c), cur_stressed))
                     else:
                         syllables.append((cur_syl, cur_stressed))
                     cur_stressed = False
+                    first_syl = False
                     rhyme_fam += c
                     cur_syl = c
                     prev_c = c
@@ -110,7 +122,7 @@ def get_words_info(words):
                     rhyme_fam = c
                     prev_c = c
                 # otherwise the character is a part of the current rhyme family 
-                elif c == " ":
+                elif c == "*":
                     continue
                 else: 
                     rhyme_fam += c
@@ -118,11 +130,13 @@ def get_words_info(words):
         # pdb.set_trace()
         syl_count=  len(syllables)
         cur_stressed = False
-        results.append((syl_count, rhyme_fam, syllables))
+        results.append((syl_count, rhyme_fam, syllables, cur_word))
 
     return results
 
-# query = input("Gimme some shit: ")
-# pp = pprint.PrettyPrinter(indent=4)
-# pp.pprint(get_words_info(query))
+query = input("Gimme some shit: ")
+pp = pprint.PrettyPrinter(indent=4)
+pp.pprint(get_words_info(query))
+print()
+
 
