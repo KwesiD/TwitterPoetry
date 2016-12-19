@@ -23,7 +23,8 @@ def syl_to_word(sentances):
 
 def rhyme_to_POS(sentances):
 	result = defaultdict(lambda : defaultdict(defaultdict))
-	tagged_tweets = CMU.runtagger_parse(sentances)
+	# tagged_tweets = CMU.runtagger_parse(sentances)
+	tagged_tweets = sentances
 	for tweet in tagged_tweets:
 		for word in tweet:
 			cur_word = word[0]
@@ -32,17 +33,13 @@ def rhyme_to_POS(sentances):
 			rhyme = info[1]
 			syl_count = info[0]
 			# if result[rhyme][tag][syl_count] != None:
-			cur = result[rhyme][tag].setdefault(syl_count, Counter())
-			cur[cur_word] += 1
+			cur = result[rhyme][tag].setdefault(syl_count, [])
+			cur.append(cur_word)
 			# else:
 			# 	result[rhyme][tag][syl_count] = [cur_word]
+			
 	return result
 
 
 
-with open(sys.argv[1]) as f:
-	lines = f.readlines()
-pp = pprint.PrettyPrinter(indent=4)
-res = rhyme_to_POS(lines)
-pp.pprint(res)
 
