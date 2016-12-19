@@ -7,6 +7,9 @@ import pdb
 import pprint
 import CMUTweetTagger as CMU
 import re
+import Process
+import syllable_count_divider as SCD
+from nltk.tokenize import sent_tokenize
 
 
 #Takes a query as an input and searches for tweets related to that query
@@ -29,8 +32,10 @@ def getTweets(query):
 
          
          
-        count = 1 #how many tweets we want to see
+        count = 1000 #how many tweets we want to see
         i = 0 
+        tweet_list = []
+        print("Searching....")
         for tweet in ts.search_tweets_iterable(tso):
             if i >= count:
                 break #stops getting tweets when we have enough
@@ -40,33 +45,33 @@ def getTweets(query):
 
             words = tweet['text']
             start = re.search("(((RT )?@(\w)*) ?:? )?", words)
-            pdb.set_trace() 
             words = words.lstrip(start.group(0))
-            #don't need a regular expression for URLs, we can delete those with runtagger_parse
-            print(words)
-            words_info = test.get_words_info(words)
-            # pdb.set_trace()
-            tags = CMU.runtagger_parse([words])
-            pp.pprint(words_info)
-            pp.pprint(tags)
-                # pronunciation = get_pronunciation("\""+ str(text) +"\"")
-            # for term in pronunciation.split(): #takes individual word pronunciations
-            #     syllable_count, syllable_list = tokenize(term)
-            #     print(term)
-            #     syl_count = 0
-            #     rhyme_fam = ''
-            #     for c in term:
-            #         if c not in SpecialCharacters.vowels:
-            #             rhyme_fam += str(c)
-            #         else:
-            #             syl_count += 1
-            #             rhyme_fam = str(c)
-            #             while next(term) in SpecialCharacters.vowels and t.next is not None:
-            #                 c = next(term)
-            #                 rhyme_fam += c
-            #     print("syllable count " + str(syl_count)),
-            #     print("rhyme: " + rhyme_fam)
+            tweet_list.append(words)
             i+=1
+        pdb.set_trace()
+        if (len(tweet_list) < 1000):
+            print("Sorry! Your search did not return enough results, please try another.")
+            return
+        print("Search complete!")
+        print("Tagging...")
+        tagged = CMU.runtagger_parse(sent_tokenize(tweet_list))
+        print("Tagging complete!")
+        print("Analyzing tags...")
+        tag_table = Process.get_tag_frequencies(tagged)
+        syl_rules = Process.get_pos_syllables(tagged)
+        rhyme_pos_table =SCD.rhyme_to_POS(tagged)
+        print("Analysis Complete!")
+        print("Generating poetry...")
+        result1 = Process.generate_firsttwo(tag_table, syl_rules)
+        r1 = result1[1]
+        r2 = result1[2]
+        firsttwo = result1[0]
+        result2 = Process.generate_lasttwo(tag_table, syl_rules, rhyme_pos_table, r1, r2)
+        lasttwo = result2
+        print("A poem about " + query + ":")
+        print()
+        print(firsttwo)
+        print(lasttwo)
             
     except TwitterSearchException as e: # take care of all those ugly errors if there are some
         print(e)

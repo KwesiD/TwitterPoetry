@@ -79,6 +79,8 @@ def create_rules(tags):
 			if prev == "Start":
 				rules[prev] = Counter([tag])
 				prev = tag
+			if (tag == "U"):
+				continue
 			else:
 				if prev in rules:
 					if tag in rules[prev]:
@@ -104,13 +106,17 @@ def create_rules(tags):
 
 def generate_firsttwo(tag_table, pos_syls):
 	tag = "Start"
+	rules = tag_table
 	sentence = ""
 	syllable_count = 0
 	deadlist_tag = []
 	deadlist_syl = []
-	end = False
+	second_line = False
 	rhyme_1 = ''
 	rhyme_2 = 	''
+	# the base is that we keep generating until we reach the 
+	# end of a sentence, instead we need to keep generating
+	# until we reach 10 syllables, as outlines in the code below
 	while tag != "end":
 		cur_syl_count = syllable_count
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
@@ -118,40 +124,52 @@ def generate_firsttwo(tag_table, pos_syls):
 			next_tag = "Start"
 			continue
 		words_info = test.get_words_info(sentence)
-		if (syllable_count >= 10 and end):
+		# if we are at the second line and have reached 10
+		# syllables once again, break out of the loop
+		if (syllable_count >= 10 and second_line):
 			rhyme_2 = words_info[len(words_info) - 1][1]
 			break
+		# once we reach 10 syllables the first time, we continue
+		# normally so that we can generate 10 more for the second
+		# line. the boolean value second_line does this for us
 		if (syllable_count == 10):
 			rhyme_1 = words_info[len(words_info) - 1][1]
 			sentence += "\n"
 			syllable_count = 0
-			end = True
+			second_line = True
 			continue
 
-		#generate word from tag
+		# table_by_tag is simply a list of all valid syllable counts
+		# for next_tag
 		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
 		tries_with_prev_tag = 0
 		possible_tries_prev_tag = len(pos_syls)
+		# if there are no valid counts, try another tag
 		if not table_by_tag:
 			deadlist_tag.append(next_tag)
 			tries_with_prev_tag += 1
+			# if we have exhausted all possible tag choices, our 
+			# corpus is not large enough
 			if (tries_with_prev_tag > possible_tries_prev_tag):
 				raise Exception("The corpus provided is not big enough")
 			continue
 
-
+		# randomly choose a number of syllables
 		num_syls = choice(table_by_tag, 1)[0]
+		# randomly choose a word from the sublist with
+		# the number of syllables
 		word = choice(pos_syls[next_tag][num_syls], 1)[0]
 		cur_syl_count += test.get_words_info(word)[0][0]
 
+		# if the word is contains no vowels, we do not want it
 		if not re.search("[aeiou]", str(word)) :
 			continue
+		# we want to remove punctuation as well, for accuracy
 		table = str.maketrans({key: None for key in string.punctuation})
 		word = str(word).translate(table)  
+		# if the word is only punctuation go on and generate another word
 		if not word:
 			continue
-		# ##check syllable count
-		# words_info = test.get_words_info(sentence + " " + word)
 
 		tries_with_syl_count = 0
 		possible_tries_syl = len(pos_syls[next_tag][num_syls])
@@ -159,6 +177,13 @@ def generate_firsttwo(tag_table, pos_syls):
 		tries_with_tag = 0
 		possible_tries_tag = len(pos_syls[next_tag])
 
+		# this is the error correction part of the algorithm
+		# essentially, if there are no valid words, regenerate
+		# excluding the conditions through which we tried
+		# to generate the last word.
+		# specific conditions are implied by the use of deadlists,
+		# to keep track of what has been tried. If we have exhausted all
+		# possible options, the corpus is not big enough
 		if (tries_with_syl_count > possible_tries_syl):
 			deadlist_syl.append(num_syls)
 			table_by_tag = [k for k in pos_syls[next_tag].keys() if k < (10 - syllable_count) and k not in deadlist_syl]
@@ -178,6 +203,7 @@ def generate_firsttwo(tag_table, pos_syls):
 					raise Exception("The corpus provided is not big enough") 
 
 		word_info = test.get_words_info(word)
+		# update the total syllable count if no problems arise
 		syllable_count += word_info[0][0]
 		sentence += word + " "
 		deadlist_syl = []
@@ -185,15 +211,25 @@ def generate_firsttwo(tag_table, pos_syls):
 		tag = next_tag
 	return (sentence, rhyme_1, rhyme_2)
 
+# this algorithm is essentially the same as above, with a few
+# big differences
 def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
+	# first, this function takes in three extra arguments:
+	# the rhymes we are going to go for, and rhyme_pos_syls
+	# rhyme_pos_syls is just a table tthat is very similar to 
+	# pos_syls, but sorts by rhyme before sorting by tag
 	tag = "Start"
+	rules = tag_table
 	sentence = ""
 	syllable_count = 0
 	deadlist_tag = []
 	deadlist_syl = []
 	deadlist_rhyming = []
-	end = False
+	second_line = False
+	# cur_rhyme stores the rhyme we are currently going for, since
+	# this will generate 2 lines
 	cur_rhyme = rhyme1
+	# temporary variable that holds our pos_syls table
 	pos_syls_backup = pos_syls
 	while tag != "end":
 		cur_syl_count = syllable_count
@@ -201,22 +237,28 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		if next_tag == "end":
 			next_tag = "Start"
 			continue
-		if (syllable_count >= 10 and end):
+		if (syllable_count >= 10 and second_line):
 			# rhyme_2 = words_info[len(words_info) - 1][1]
 			break
 		if (syllable_count == 10):
 			cur_rhyme = rhyme2
 			sentence += "\n"
 			syllable_count = 0
-			end = True
+			second_line = True
 			continue
 
 		#generate word from tag
 		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
 		rhyme_POS = rhyme_pos_syls[cur_rhyme]
-		# newly added
+		# newly added. this table_by_tag checks if there are any
+		# valid words that rhyme with our current rhyme, we should
+		# use them
 		table_by_tag_rhyme = [k for k in rhyme_POS[next_tag].keys() if k == (10 - syllable_count)]
+		# if there are, we should use them
 		if table_by_tag_rhyme:
+			# this is effectively making rhyme_POS the basis
+			# with which we will select words. rhyme_POS is the
+			# same as pos_syls but with our current rhyme words only
 			table_by_tag = table_by_tag_rhyme
 			pos_syls = rhyme_POS
 		tries_with_prev_tag = 0
@@ -234,9 +276,15 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		cur_word_info = test.get_words_info(word)
 		cur_syl_count += cur_word_info[0][0]
 		if (cur_syl_count == 10):
+			# if we have reached 10 syllables and still have not
+			# found a word that rhymes, we need to force
+			# our program to find a word that does
 			if cur_word_info[0][1] != cur_rhyme:
+				# first it will look for one in rhyme_pos_syls
 				try:
 					word = choice(rhyme_pos_syls[cur][next_tag][num_syls])[0]
+				# if none exist, we need to choose another tag that
+				# has valid rhymes
 				except:
 					deadlist_rhyming.append(next_tag)
 					next_tag = tag
@@ -249,8 +297,6 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		word = str(word).translate(table)  
 		if not word:
 			continue 
-		# ##check syllable count
-		# words_info = test.get_words_info(sentence + " " + word)
 
 		tries_with_syl_count = 0
 		possible_tries_syl = len(pos_syls[next_tag][num_syls])
@@ -283,6 +329,9 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		deadlist_tag = []
 		deadlist_rhyming = []
 		tag = next_tag
+		# once we are done dealing with a specific rhyme, 
+		# we want to be sure that we return pos_syls to normal
+		# so we can still generate non-rhyming words. 
 		pos_syls = pos_syls_backup
 	return sentence
 
@@ -309,59 +358,3 @@ def iambic_pentameter(words_info):
 			return False
 		prev_stress_OG = sequence[1]
 	return True
-
-file = open(sys.argv[1], 'r')
-count = 0
-x = CMU.runtagger_parse(sent_tokenize(file.read())) ##we should strip the sentences of punctuation after the file has been split into sentences
-rules = create_rules(x)
-tag_table = get_tag_frequencies(x)
-syl_rules = get_pos_syllables(x)
-rhyme_pos_table = rhyme_to_POS(x)
-result1 = generate_firsttwo(rules, syl_rules)
-r1 = result1[1]
-r2 = result1[2]
-firsttwo = result1[0]
-result2 = generate_lasttwo(rules, syl_rules, rhyme_pos_table, r1, r2)
-lasttwo = result2
-print(firsttwo)
-print(lasttwo)
-# pdb.set_trace()
-print()
-# for line in file:
-# 	sent.append(CMU.runtagger_parse(line))
-# 	count += 1
-# 	if count >= 3:
-# 		break
-# create_rules(sent)
-
-	# 	prev = ""
-	# 	for tag in line.strip().split():
-	# 		if prev == "":
-	# 			prev = tag
-	# 		else:
-	# 			if prev in rules:
-	# 				if tag in rules[prev]:
-	# 					rules[prev][tag] += 1 
-	# 					rule_counts[prev][tag] += 1
-	# 				else:
-	# 					rules[prev][tag] = 1
-	# 					rule_counts[prev][tag] = 1
-
-	# 			else:
-	# 				rules[prev] = {}
-	# 				rule_counts[prev] = {}
-	# 				rules[prev][tag] = 1
-	# 				rule_counts[prev][tag] = 1
-	# 			num_rules += 1
-	# 			prev = tag
-	# 	if prev not in rules:
-	# 		rules[prev] = {}
-	# 		rule_counts[prev] = {}
-	# 	if "end" in rules[prev]:
-	# 		rules[prev]["end"] += 1
-	# 		rule_counts[prev]["end"] += 1
-	# 	else:
-	# 		rules[prev]["end"] = 1
-	# 		rule_counts[prev]["end"] = 1
-	# 	num_rules += 1
-	# return rules, num_rules#rule_counts, num_rules
