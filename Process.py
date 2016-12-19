@@ -4,6 +4,8 @@ import test
 import sys
 from nltk.tokenize import sent_tokenize
 from numpy.random import choice
+import string
+import re
 
 #takes in a list of sets. Each set contains a list of the words, their tags, and the probabilities
 def get_tag_frequencies(tagged_words):
@@ -96,34 +98,114 @@ def create_rules(tags):
 		total = sum(rules[tag].values())
 		for value in rules[tag]:
 			rules[tag][value] /= total
-	print(rules)
+	# print(rules)
 	return rules
 
 
-def generate(rules,tag_table):
+def generate(rules,tag_table, pos_syls):
 	tag = "Start"
 	sentence = ""
 	syllable_count = 0
+	deadlist_tag = []
+	deadlist_syl = []
+	end = False
 	while tag != "end":
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			break
-		tag = next_tag
+		if (syllable_count >= 10 and end):
+			break
+		if (syllable_count == 10):
+			sentence += "\n"
+			syllable_count = 0
+			end = True
+			continue
 		#generate word from tag
-		word = choice(list(tag_table[next_tag].keys()),1,list(tag_table[next_tag].values()))[0]
+		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
+		tries_with_prev_tag = 0
+		possible_tries_prev_tag = len(pos_syls)
+		if not table_by_tag:
+			deadlist_tag.append(next_tag)
+			tries_with_prev_tag += 1
+			if (tries_with_prev_tag > possible_tries_prev_tag):
+				raise Exception("The corpus provided is not big enough")
+			continue
+
+
+		num_syls = choice(table_by_tag, 1)[0]
+		word = choice(pos_syls[next_tag][num_syls], 1)[0]
+		if not re.search("[aeiou]", str(word)) :
+			continue
+		table = str.maketrans({key: None for key in string.punctuation})
+		word = str(word).translate(table)  
+		if not word:
+			continue
 		##check syllable count
+		words_info = test.get_words_info(sentence + " " + word)
+
+		tries_with_syl_count = 0
+		possible_tries_syl = len(pos_syls[next_tag][num_syls])
+
+		tries_with_tag = 0
+		possible_tries_tag = len(pos_syls[next_tag])
+
+		if (tries_with_syl_count > possible_tries_syl):
+			deadlist_syl.append(num_syls)
+			table_by_tag = [k for k in pos_syls[next_tag].keys() if k < (10 - syllable_count) and k not in deadlist_syl]
+			if table_by_tag:	
+				num_syls = choice(table_by_tag, 1)[0]
+				possible_tries_syl = len(pos_syls[next_tag][num_syls])
+				continue
+			tries_with_tag += 1
+			tries_with_syl_count = 0
+			if (tries_with_tag > possible_tries_tag):
+				next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
+				tries_with_tag = 0
+				tries_with_syl_count = 0
+				possible_tries_tag = len(pos_syls[next_tag])
+				tries_with_prev_tag += 1
+				if (tries_with_prev_tag > possible_tries_prev_tag):
+					raise Exception("The corpus provided is not big enough") 
+
+		word_info = test.get_words_info(word)
+		syllable_count += word_info[0][0]
 		sentence += word + " "
+		deadlist_syl = []
+		deadlist_tag = []
+		tag = next_tag
 
 	print(sentence)
 
-		
+def check_seq_word(word_info, prev_stress_OG):
+	syllables = word_info[2]
+	valid = True 
+	prev_stress = prev_stress_OG
+	for syl in syllables:
+		cur_stress = syl[1]
+		if (cur_stress == prev_stress):
+			valid = False 
+			break
+		prev_stress = cur_stress
+	last_stress = prev_stress
+	return (valid, last_stress)
+
+def iambic_pentameter(words_info):
+	prev_stress_OG = False
+	for word_info in words_info:
+		sequence = check_seq_word(word_info,prev_stress_OG)  
+		valid = sequence[0]
+		if not valid:
+			return False
+		prev_stress_OG = sequence[1]
+	return True
 
 file = open(sys.argv[1], 'r')
 count = 0
 x = CMU.runtagger_parse(sent_tokenize(file.read())) ##we should strip the sentences of punctuation after the file has been split into sentences
 rules = create_rules(x)
 tag_table = get_tag_frequencies(x)
-generate(rules,tag_table)
+syl_rules = get_pos_syllables(x)
+generate(rules,tag_table, syl_rules)
 # for line in file:
 # 	sent.append(CMU.runtagger_parse(line))
 # 	count += 1
