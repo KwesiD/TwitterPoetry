@@ -109,13 +109,17 @@ def generate(rules,tag_table, pos_syls):
 	deadlist_tag = []
 	deadlist_syl = []
 	end = False
+	rhyme_1 = ''
+	rhyme_2 = 	''
 	while tag != "end":
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			break
 		if (syllable_count >= 10 and end):
+			rhyme_2 = words_info[len(words_info) - 1][1]
 			break
 		if (syllable_count == 10):
+			rhyme_1 = words_info[len(words_info) - 1][1]
 			sentence += "\n"
 			syllable_count = 0
 			end = True
@@ -173,8 +177,8 @@ def generate(rules,tag_table, pos_syls):
 		deadlist_syl = []
 		deadlist_tag = []
 		tag = next_tag
+	return (sentence, rhyme_1, rhyme_2)
 
-	print(sentence)
 
 def check_seq_word(word_info, prev_stress_OG):
 	syllables = word_info[2]
@@ -205,7 +209,7 @@ x = CMU.runtagger_parse(sent_tokenize(file.read())) ##we should strip the senten
 rules = create_rules(x)
 tag_table = get_tag_frequencies(x)
 syl_rules = get_pos_syllables(x)
-generate(rules,tag_table, syl_rules)
+print(generate(rules,tag_table, syl_rules))
 # for line in file:
 # 	sent.append(CMU.runtagger_parse(line))
 # 	count += 1
