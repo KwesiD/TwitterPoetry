@@ -48,18 +48,25 @@ def getTweets(query):
             words = words.lstrip(start.group(0))
             tweet_list.append(words)
             i+=1
-        pdb.set_trace()
+        #pdb.set_trace()
         if (len(tweet_list) < 1000):
             print("Sorry! Your search did not return enough results, please try another.")
             return
         print("Search complete!")
         print("Tagging...")
-        tagged = CMU.runtagger_parse(sent_tokenize(tweet_list))
+        # tweetset = ""
+        # for t in tweet_list:
+        #     tweetset += t.strip() + " "
+
+        #print(tweetset)
+
+        tagged = CMU.runtagger_parse(sent_tokenize("\n".join(tweet_list)))#tweetset))
         print("Tagging complete!")
         print("Analyzing tags...")
-        tag_table = Process.get_tag_frequencies(tagged)
+        #tag_table = Process.get_tag_frequencies(tagged)
+        tag_table = Process.create_rules(tagged)
         syl_rules = Process.get_pos_syllables(tagged)
-        rhyme_pos_table =SCD.rhyme_to_POS(tagged)
+        rhyme_pos_table = SCD.rhyme_to_POS(tagged)
         print("Analysis Complete!")
         print("Generating poetry...")
         result1 = Process.generate_firsttwo(tag_table, syl_rules)
