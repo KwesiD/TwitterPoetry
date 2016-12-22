@@ -29,13 +29,13 @@ def getTweets(query):
             tso.set_include_entities(False) # and don't give us all those entity information   #from original code, idk what it does
                      #my API data. 
             ts = TwitterSearch(
-                consumer_key = 'CEBkHI0NJWisF9Wh6bo59WilM',
-                consumer_secret = 'bYg84yGtUW44IWDCyI2h2ydfArj40aMI0rtPMIhK3uf6vNxEbA',
-                access_token = '760218193587732480-5kf55wKpIi05RvUqRGmL0JVOb7txh0b',
-                access_token_secret = 'kIEdUMKMuck51cmfbWSIoVIWNeenicMhiW4XMrb8XuChW'
+                consumer_key = 'SwtLcZe9Im6q998K4cJqANs4n',
+                consumer_secret = '7PMRM3ec7ltINPVl72FXurMn8Qg9HrS1NKwocYJVlTGngEFbEA',
+                access_token = '51466054-cJUBESD4H9THIQExiKQ1HOGdR0GflXdyeIeL0TfKw',
+                access_token_secret = 'nn3ESWtluVoLSNFexAKcEesF6rEg0lTJ4QaIbFHJACFDr'
              )
          
-        count = 1000 #how many tweets we want to see
+        count = 5000 #how many tweets we want to see. we want as many as possible, but do not want to sacrifice load time too much
         i = 0 
         tweet_list = []
         if sample:
@@ -57,6 +57,7 @@ def getTweets(query):
                 words = words.lstrip(start.group(0))
                 tweet_list.append(words)
                 i+=1
+            # if we have less than 1000 tweets, the corpus is too short.
             if (len(tweet_list) <1000):
                 print("Sorry! Your search did not return enough results, please try another.")
                 return

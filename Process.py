@@ -4,10 +4,12 @@ import test
 import sys
 from nltk.tokenize import sent_tokenize
 from numpy.random import choice
+from numpy import array
 import string
 import re
 from syllable_count_divider import rhyme_to_POS
 import copy
+import os
 
 #takes in a list of sets. Each set contains a list of the words, their tags, and the probabilities
 def get_tag_frequencies(tagged_words):
@@ -108,11 +110,12 @@ def create_rules(tags):
 
 def generate_firsttwo(tag_table, pos_syls):
 	tag = "Start"
+	prev_tag = ""
 	rules = copy.copy(tag_table)
 	sentence = ""
 	syllable_count = 0
 	# we dont want any emoticons, this also picks up unicode
-	deadlist_tag = ["E"]
+	deadlist_tag = ["E", ","]
 	deadlist_syl = []
 	second_line = False
 	rhyme_1 = ''
@@ -125,13 +128,18 @@ def generate_firsttwo(tag_table, pos_syls):
 	# until we reach 10 syllables, as outlines in the code below
 	while tag != "end":
 		cur_syl_count = syllable_count
+		if not rules[tag]:
+			if prev_tag == "":
+				print("Sorry! The search did not provide enough results. Try another!")
+				os._exit(1)
+			tag = choice(list(rules[prev_tag].keys()),1,list(rules[prev_tag].values()))[0]
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			next_tag = "Start"
 			continue
 		if next_tag in deadlist_tag:
-			if next_tag in rules:
-				del rules[next_tag]
+			if next_tag in rules[tag]:
+				del rules[tag][next_tag]
 			continue
 		words_info = test.get_words_info(sentence)
 		# if we are at the second line and have reached 10
@@ -151,7 +159,7 @@ def generate_firsttwo(tag_table, pos_syls):
 
 		# table_by_tag is simply a list of all valid syllable counts
 		# for next_tag
-		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
+		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count) and k not in deadlist_syl]
 		possible_tries_prev_tag = len(pos_syls)
 		# if there are no valid counts, try another tag
 		if not table_by_tag:
@@ -167,6 +175,13 @@ def generate_firsttwo(tag_table, pos_syls):
 		num_syls = choice(table_by_tag, 1)[0]
 		# randomly choose a word from the sublist with
 		# the number of syllables
+
+		possible_tries_syl = len(pos_syls[next_tag][num_syls])
+
+		possible_tries_tag = len(pos_syls[next_tag])
+		if not pos_syls[next_tag][num_syls]:
+			deadlist_syl.append(num_syls)
+			continue
 		word = choice(pos_syls[next_tag][num_syls], 1)[0]
 		cur_syl_count += test.get_words_info(word)[0][0]
 
@@ -182,11 +197,6 @@ def generate_firsttwo(tag_table, pos_syls):
 		# if the word is only punctuation go on and generate another word
 		if not word:
 			continue
-
-		possible_tries_syl = len(pos_syls[next_tag][num_syls])
-
-		possible_tries_tag = len(pos_syls[next_tag])
-
 		# this is the error correction part of the algorithm
 		# essentially, if there are no valid words, regenerate
 		# excluding the conditions through which we tried
@@ -220,8 +230,9 @@ def generate_firsttwo(tag_table, pos_syls):
 		tries_with_tag = 0
 		tries_with_syl_count = 0
 		deadlist_syl = []
-		deadlist_tag = ["E"]
+		deadlist_tag = ["E", ","]
 		rules = copy.copy(tag_table)
+		prev_tag = tag
 		tag = next_tag
 	return (sentence, rhyme_1, rhyme_2)
 
@@ -236,13 +247,14 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 	rules = copy.copy(tag_table)
 	sentence = ""
 	syllable_count = 0
-	deadlist_tag = ["E"]
+	deadlist_tag = ["E", ","]
 	deadlist_syl = []
 	deadlist_rhyming = []
 	second_line = False
 	tries_with_prev_tag = 0
 	tries_with_tag = 0
 	tries_with_syl_count = 0
+	prev_tag = ""
 	# cur_rhyme stores the rhyme we are currently going for, since
 	# this will generate 2 lines
 	cur_rhyme = rhyme1
@@ -250,13 +262,18 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 	pos_syls_backup = copy.copy(pos_syls)
 	while tag != "end":
 		cur_syl_count = syllable_count
+
+		if not rules[tag]:
+			if prev_tag == "":
+				print("Sorry! The search did not provide enough results. Try another!")
+				os._exit(1)
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			next_tag = "Start"
 			continue
 		if next_tag in deadlist_tag:
-			if next_tag in rules:	
-				del rules[next_tag]
+			if next_tag in rules[tag]:
+				del rules[tag][next_tag]
 			continue
 		if (syllable_count >= 10 and second_line):
 			# rhyme_2 = words_info[len(words_info) - 1][1]
@@ -269,7 +286,7 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			continue
 
 		#generate word from tag
-		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
+		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count) and k not in deadlist_syl]
 		rhyme_POS = rhyme_pos_syls[cur_rhyme]
 		# newly added. this table_by_tag checks if there are any
 		# valid words that rhyme with our current rhyme, we should
@@ -280,9 +297,11 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			# this is effectively making rhyme_POS the basis
 			# with which we will select words. rhyme_POS is the
 			# same as pos_syls but with our current rhyme words only
+
 			table_by_tag = table_by_tag_rhyme
 			pos_syls = rhyme_POS
 		possible_tries_prev_tag = len(pos_syls)
+
 		if not table_by_tag:
 			deadlist_tag.append(next_tag)
 			tries_with_prev_tag += 1
@@ -292,6 +311,13 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 
 
 		num_syls = choice(table_by_tag, 1)[0]
+
+		possible_tries_syl = len(pos_syls[next_tag][num_syls])
+
+		possible_tries_tag = len(pos_syls[next_tag])
+		if not pos_syls[next_tag][num_syls]:
+			deadlist_syl.append(num_syls)
+			continue
 		word = choice(pos_syls[next_tag][num_syls], 1)[0]
 		cur_word_info = test.get_words_info(word)
 		cur_syl_count += cur_word_info[0][0]
@@ -301,13 +327,16 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			# our program to find a word that does
 			if cur_word_info[0][1] != cur_rhyme:
 				# first it will look for one in rhyme_pos_syls
+				possible_tries_rhyme = len(rhyme_pos_syls[cur_rhyme])
 				try:
-					word = choice(rhyme_pos_syls[cur_rhyme][next_tag][num_syls])[0]
+					word = choice([rhyme_pos_syls[cur_rhyme][tag][num_syls] for tag in rhyme_pos_syls[cur_rhyme].keys() if tag not in deadlist_rhyming])[0]
 				# if none exist, we need to choose another tag that
 				# has valid rhymes
 				except:
 					deadlist_rhyming.append(next_tag)
-					next_tag = tag
+					if len(deadlist_rhyming) > possible_tries_rhyme:
+						print("Sorry! The search did not return enough results. No rhyming words were found!")
+						os._exit(1)
 					cur_syl_count -= cur_word_info[0][0]
 					continue
 
@@ -315,14 +344,11 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			for i in pos_syls[next_tag][num_syls]:
 				if i == word:
 					pos_syls[next_tag][num_syls].remove(i)
+			continue
 		table = str.maketrans({key: None for key in string.punctuation})
 		word = str(word).translate(table)  
 		if not word:
 			continue 
-
-		possible_tries_syl = len(pos_syls[next_tag][num_syls])
-
-		possible_tries_tag = len(pos_syls[next_tag])
 
 		if (tries_with_syl_count > possible_tries_syl):
 			deadlist_syl.append(num_syls)
@@ -349,8 +375,9 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		tries_with_tag = 0
 		tries_with_syl_count = 0
 		deadlist_syl = []
-		deadlist_tag = ["E"]
+		deadlist_tag = ["E", ","]
 		deadlist_rhyming = []
+		prev_tag = tag
 		tag = next_tag
 		# once we are done dealing with a specific rhyme, 
 		# we want to be sure that we return pos_syls to normal
