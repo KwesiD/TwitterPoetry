@@ -6,6 +6,7 @@ from collections import deque
 import pprint
 
 
+word_info_table = {}
 
 def get_pronunciation(sentence):
     """
@@ -16,6 +17,7 @@ def get_pronunciation(sentence):
     output = subprocess.check_output(['espeak', '-x', '-q', sentence.strip('-')])
     return output.decode("utf-8")
 
+
 def get_words_info(words):
 
     query = words
@@ -25,11 +27,21 @@ def get_words_info(words):
     results = []
 
     query = query.split()
-    pronounciaiton = [(k, get_pronunciation(k)) for k in query]
+    #pronounciaiton = [(k, get_pronunciation(k)) for k in query]
+    pronounciaiton = []
+    for term in query:
+        if term in word_info_table:
+            pronounciaiton.append((term,"Already Exists"))
+        else:
+            pronounciaiton.append((term,get_pronunciation(term)))
+
     list_proc = pronounciaiton
     i = -1
     for term in list_proc:
         # print(str(query[i]))
+        if term[1] == "Already Exists":
+            results.append(word_info_table[term[0]])
+            continue
         cur_word = term[0]
         term = term[1]
         i += 1
@@ -127,16 +139,11 @@ def get_words_info(words):
                 else: 
                     rhyme_fam += c
                     prev_c = c
-        # pdb.set_trace()
         syl_count=  len(syllables)
         cur_stressed = False
+        word_info_table[cur_word] = (syl_count, rhyme_fam, syllables, cur_word)
         results.append((syl_count, rhyme_fam, syllables, cur_word))
 
     return results
-
-# query = input("Gimme some shit: ")
-# pp = pprint.PrettyPrinter(indent=4)
-# pp.pprint(get_words_info(query))
-# print()
 
 

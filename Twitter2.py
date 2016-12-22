@@ -10,49 +10,57 @@ import re
 import Process
 import syllable_count_divider as SCD
 from nltk.tokenize import sent_tokenize
+import sys
+import os
 
 
+sample = False
+file = None
 #Takes a query as an input and searches for tweets related to that query
 def getTweets(query):
-    pp = pprint.PrettyPrinter(indent=4)
+    #pp = pprint.PrettyPrinter(indent=4)
+    
     try:
-        tso = TwitterSearchOrder() # create a TwitterSearchOrder object
-        print(query)
-        tso.set_keywords([query]) # let's define all words we would like to have a look for
-        tso.set_language('en') # we want to see English tweets only
-        tso.set_include_entities(False) # and don't give us all those entity information   #from original code, idk what it does
-
-        #my API data. 
-        ts = TwitterSearch(
-            consumer_key = 'CEBkHI0NJWisF9Wh6bo59WilM',
-            consumer_secret = 'bYg84yGtUW44IWDCyI2h2ydfArj40aMI0rtPMIhK3uf6vNxEbA',
-            access_token = '760218193587732480-5kf55wKpIi05RvUqRGmL0JVOb7txh0b',
-            access_token_secret = 'kIEdUMKMuck51cmfbWSIoVIWNeenicMhiW4XMrb8XuChW'
-         )
-
-         
+        if not sample:
+            tso = TwitterSearchOrder() # create a TwitterSearchOrder object
+            print(query)
+            tso.set_keywords([query]) # let's define all words we would like to have a look for
+            tso.set_language('en') # we want to see English tweets only
+            tso.set_include_entities(False) # and don't give us all those entity information   #from original code, idk what it does
+                     #my API data. 
+            ts = TwitterSearch(
+                consumer_key = 'CEBkHI0NJWisF9Wh6bo59WilM',
+                consumer_secret = 'bYg84yGtUW44IWDCyI2h2ydfArj40aMI0rtPMIhK3uf6vNxEbA',
+                access_token = '760218193587732480-5kf55wKpIi05RvUqRGmL0JVOb7txh0b',
+                access_token_secret = 'kIEdUMKMuck51cmfbWSIoVIWNeenicMhiW4XMrb8XuChW'
+             )
          
         count = 1000 #how many tweets we want to see
         i = 0 
         tweet_list = []
-        print("Searching....")
-        for tweet in ts.search_tweets_iterable(tso):
-            if i >= count:
-                break #stops getting tweets when we have enough
-            
-            #keep this line below as a reference. from the original code:
-            #print( '@%s tweeted: %s' % ( tweet['user']['screen_name'], tweet['text'] ) )
+        if sample:
+            print("Reading Sample File")
+            for line in file.read().split('\n'):
+                tweet_list.append(line)
+        else:
+            print("Searching....") 
+            for tweet in ts.search_tweets_iterable(tso):
 
-            words = tweet['text']
-            start = re.search("(((RT )?@(\w)*) ?:? )?", words)
-            words = words.lstrip(start.group(0))
-            tweet_list.append(words)
-            i+=1
-        #pdb.set_trace()
-        if (len(tweet_list) < 1000):
-            print("Sorry! Your search did not return enough results, please try another.")
-            return
-        print("Search complete!")
+                if i >= count:
+                    break #stops getting tweets when we have enough
+                
+                #keep this line below as a reference. from the original code:
+                #print( '@%s tweeted: %s' % ( tweet['user']['screen_name'], tweet['text'] ) )
+
+                words = tweet['text']
+                start = re.search("(((RT )?@(\w)*) ?:? )?", words)
+                words = words.lstrip(start.group(0))
+                tweet_list.append(words)
+                i+=1
+            if (len(tweet_list) <1000):
+                print("Sorry! Your search did not return enough results, please try another.")
+                return
+            print("Search complete!")
         print("Tagging...")
         # tweetset = ""
         # for t in tweet_list:
@@ -130,7 +138,19 @@ def tokenize(term):
             
             
                 
-    
+  
+#for use with sample corpus
+sample = False
+if len(sys.argv) >= 2:
+    if os.path.isfile('./'+sys.argv[1]):
+        file = open(sys.argv[1],'r')
+        sample = True
+        query = "your sample file" 
 
-query = input("What do you want to search for? ")
+    else:
+        print("File " + sys.argv[1] + " not found")
+        quit()  
+else:  
+    query = input("What do you want to search for? ") #Using an actual hashtag gives different results than a general query.
+                                                      #Trump vs just Trump. Sometimes more, sometimes less
 getTweets(query)
