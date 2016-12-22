@@ -109,11 +109,15 @@ def generate_firsttwo(tag_table, pos_syls):
 	rules = tag_table
 	sentence = ""
 	syllable_count = 0
-	deadlist_tag = []
+	# we dont want any emoticons, this also picks up unicode
+	deadlist_tag = ["E"]
 	deadlist_syl = []
 	second_line = False
 	rhyme_1 = ''
-	rhyme_2 = 	''
+	rhyme_2 = ''
+	tries_with_prev_tag = 0
+	tries_with_tag = 0
+	tries_with_syl_count = 0
 	# the base is that we keep generating until we reach the 
 	# end of a sentence, instead we need to keep generating
 	# until we reach 10 syllables, as outlines in the code below
@@ -122,6 +126,8 @@ def generate_firsttwo(tag_table, pos_syls):
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			next_tag = "Start"
+			continue
+		if next_tag in deadlist_tag:
 			continue
 		words_info = test.get_words_info(sentence)
 		# if we are at the second line and have reached 10
@@ -142,7 +148,6 @@ def generate_firsttwo(tag_table, pos_syls):
 		# table_by_tag is simply a list of all valid syllable counts
 		# for next_tag
 		table_by_tag = [k for k in pos_syls[next_tag].keys() if k <= (10 - syllable_count)]
-		tries_with_prev_tag = 0
 		possible_tries_prev_tag = len(pos_syls)
 		# if there are no valid counts, try another tag
 		if not table_by_tag:
@@ -171,10 +176,8 @@ def generate_firsttwo(tag_table, pos_syls):
 		if not word:
 			continue
 
-		tries_with_syl_count = 0
 		possible_tries_syl = len(pos_syls[next_tag][num_syls])
 
-		tries_with_tag = 0
 		possible_tries_tag = len(pos_syls[next_tag])
 
 		# this is the error correction part of the algorithm
@@ -206,8 +209,11 @@ def generate_firsttwo(tag_table, pos_syls):
 		# update the total syllable count if no problems arise
 		syllable_count += word_info[0][0]
 		sentence += word + " "
+		tries_with_prev_tag = 0
+		tries_with_tag = 0
+		tries_with_syl_count = 0
 		deadlist_syl = []
-		deadlist_tag = []
+		deadlist_tag = ["E"]
 		tag = next_tag
 	return (sentence, rhyme_1, rhyme_2)
 
@@ -282,7 +288,7 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			if cur_word_info[0][1] != cur_rhyme:
 				# first it will look for one in rhyme_pos_syls
 				try:
-					word = choice(rhyme_pos_syls[cur][next_tag][num_syls])[0]
+					word = choice(rhyme_pos_syls[cur_rhyme][next_tag][num_syls])[0]
 				# if none exist, we need to choose another tag that
 				# has valid rhymes
 				except:
