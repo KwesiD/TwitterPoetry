@@ -7,6 +7,8 @@ from numpy.random import choice
 import string
 import re
 from syllable_count_divider import rhyme_to_POS
+import copy
+
 #takes in a list of sets. Each set contains a list of the words, their tags, and the probabilities
 def get_tag_frequencies(tagged_words):
 	tag_table = {}
@@ -106,7 +108,7 @@ def create_rules(tags):
 
 def generate_firsttwo(tag_table, pos_syls):
 	tag = "Start"
-	rules = tag_table
+	rules = copy.copy(tag_table)
 	sentence = ""
 	syllable_count = 0
 	# we dont want any emoticons, this also picks up unicode
@@ -128,6 +130,8 @@ def generate_firsttwo(tag_table, pos_syls):
 			next_tag = "Start"
 			continue
 		if next_tag in deadlist_tag:
+			if next_tag in rules:
+				del rules[next_tag]
 			continue
 		words_info = test.get_words_info(sentence)
 		# if we are at the second line and have reached 10
@@ -168,6 +172,9 @@ def generate_firsttwo(tag_table, pos_syls):
 
 		# if the word is contains no vowels, we do not want it
 		if not re.search("[aeiou]", str(word)) :
+			for i in pos_syls[next_tag][num_syls]:
+				if i == word:
+					pos_syls[next_tag][num_syls].remove(i)
 			continue
 		# we want to remove punctuation as well, for accuracy
 		table = str.maketrans({key: None for key in string.punctuation})
@@ -214,6 +221,7 @@ def generate_firsttwo(tag_table, pos_syls):
 		tries_with_syl_count = 0
 		deadlist_syl = []
 		deadlist_tag = ["E"]
+		rules = copy.copy(tag_table)
 		tag = next_tag
 	return (sentence, rhyme_1, rhyme_2)
 
@@ -225,23 +233,30 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 	# rhyme_pos_syls is just a table tthat is very similar to 
 	# pos_syls, but sorts by rhyme before sorting by tag
 	tag = "Start"
-	rules = tag_table
+	rules = copy.copy(tag_table)
 	sentence = ""
 	syllable_count = 0
-	deadlist_tag = []
+	deadlist_tag = ["E"]
 	deadlist_syl = []
 	deadlist_rhyming = []
 	second_line = False
+	tries_with_prev_tag = 0
+	tries_with_tag = 0
+	tries_with_syl_count = 0
 	# cur_rhyme stores the rhyme we are currently going for, since
 	# this will generate 2 lines
 	cur_rhyme = rhyme1
 	# temporary variable that holds our pos_syls table
-	pos_syls_backup = pos_syls
+	pos_syls_backup = copy.copy(pos_syls)
 	while tag != "end":
 		cur_syl_count = syllable_count
 		next_tag = choice(list(rules[tag].keys()),1,list(rules[tag].values()))[0]
 		if next_tag == "end":
 			next_tag = "Start"
+			continue
+		if next_tag in deadlist_tag:
+			if next_tag in rules:	
+				del rules[next_tag]
 			continue
 		if (syllable_count >= 10 and second_line):
 			# rhyme_2 = words_info[len(words_info) - 1][1]
@@ -267,7 +282,6 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 			# same as pos_syls but with our current rhyme words only
 			table_by_tag = table_by_tag_rhyme
 			pos_syls = rhyme_POS
-		tries_with_prev_tag = 0
 		possible_tries_prev_tag = len(pos_syls)
 		if not table_by_tag:
 			deadlist_tag.append(next_tag)
@@ -298,16 +312,16 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 					continue
 
 		if not re.search("[aeiou]", str(word)) :
-			continue
+			for i in pos_syls[next_tag][num_syls]:
+				if i == word:
+					pos_syls[next_tag][num_syls].remove(i)
 		table = str.maketrans({key: None for key in string.punctuation})
 		word = str(word).translate(table)  
 		if not word:
 			continue 
 
-		tries_with_syl_count = 0
 		possible_tries_syl = len(pos_syls[next_tag][num_syls])
 
-		tries_with_tag = 0
 		possible_tries_tag = len(pos_syls[next_tag])
 
 		if (tries_with_syl_count > possible_tries_syl):
@@ -331,14 +345,18 @@ def generate_lasttwo(tag_table, pos_syls, rhyme_pos_syls, rhyme1, rhyme2):
 		word_info = test.get_words_info(word)
 		syllable_count += word_info[0][0]
 		sentence += word + " "
+		tries_with_prev_tag = 0
+		tries_with_tag = 0
+		tries_with_syl_count = 0
 		deadlist_syl = []
-		deadlist_tag = []
+		deadlist_tag = ["E"]
 		deadlist_rhyming = []
 		tag = next_tag
 		# once we are done dealing with a specific rhyme, 
 		# we want to be sure that we return pos_syls to normal
 		# so we can still generate non-rhyming words. 
-		pos_syls = pos_syls_backup
+		pos_syls = copy.copy(pos_syls_backup)
+		rules = copy.copy(tag_table)
 	return sentence
 
 
