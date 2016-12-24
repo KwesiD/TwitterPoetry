@@ -6,7 +6,6 @@ from collections import deque
 import pprint
 
 
-word_info_table = {}
 
 def get_pronunciation(sentence):
     """
@@ -17,7 +16,6 @@ def get_pronunciation(sentence):
     output = subprocess.check_output(['espeak', '-x', '-q', sentence.strip('-')])
     return output.decode("utf-8")
 
-
 def get_words_info(words):
 
     query = words
@@ -27,21 +25,11 @@ def get_words_info(words):
     results = []
 
     query = query.split()
-    #pronounciaiton = [(k, get_pronunciation(k)) for k in query]
-    pronounciaiton = []
-    for term in query:
-        if term in word_info_table:
-            pronounciaiton.append((term,"Already Exists"))
-        else:
-            pronounciaiton.append((term,get_pronunciation(term)))
-
+    pronounciaiton = [(k, get_pronunciation(k)) for k in query]
     list_proc = pronounciaiton
     i = -1
     for term in list_proc:
-        # print(str(query[i]))
-        if term[1] == "Already Exists":
-            results.append(word_info_table[term[0]])
-            continue
+        
         cur_word = term[0]
         term = term[1]
         i += 1
@@ -104,9 +92,6 @@ def get_words_info(words):
                         syllables.append((last, cur_stressed))
                     break
                 elif last_syl:
-                    # last = syllables.pop()
-                    # now = (last[0] + cur_syl.strip(), last[1])
-                    # pdb.set_trace()
                     syllables.append((cur_syl.strip(), cur_stressed))
                 elif prev_c not in SpecialCharacters.vowels:
                     rhyme_fam += c 
@@ -139,11 +124,9 @@ def get_words_info(words):
                 else: 
                     rhyme_fam += c
                     prev_c = c
+
         syl_count=  len(syllables)
         cur_stressed = False
-        word_info_table[cur_word] = (syl_count, rhyme_fam, syllables, cur_word)
         results.append((syl_count, rhyme_fam, syllables, cur_word))
 
     return results
-
-

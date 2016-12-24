@@ -35,7 +35,7 @@ def getTweets(query):
                 access_token_secret = 'nn3ESWtluVoLSNFexAKcEesF6rEg0lTJ4QaIbFHJACFDr'
              )
          
-        count = 5000 #how many tweets we want to see. we want as many as possible, but do not want to sacrifice load time too much
+        count = 1000 #how many tweets we want to see. we want as many as possible, but do not want to sacrifice load time too much
         i = 0 
         tweet_list = []
         if sample:
@@ -63,16 +63,11 @@ def getTweets(query):
                 return
             print("Search complete!")
         print("Tagging...")
-        # tweetset = ""
-        # for t in tweet_list:
-        #     tweetset += t.strip() + " "
-
-        #print(tweetset)
 
         tagged = CMU.runtagger_parse(sent_tokenize("\n".join(tweet_list)))#tweetset))
         print("Tagging complete!")
         print("Analyzing tags...")
-        #tag_table = Process.get_tag_frequencies(tagged)
+
         tag_table = Process.create_rules(tagged)
         syl_rules = Process.get_pos_syllables(tagged)
         rhyme_pos_table = SCD.rhyme_to_POS(tagged)
